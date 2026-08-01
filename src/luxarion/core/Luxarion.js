@@ -38,7 +38,15 @@ export class LuxarionEngine {
         return this.#container;
     }
 
+    getContainer() {
+        return this.#container;
+    }
+
     get version() {
+        return version;
+    }
+
+    getVersion() {
         return version;
     }
 
@@ -46,7 +54,15 @@ export class LuxarionEngine {
         return Constants;
     }
 
+    getConstants() {
+        return Constants;
+    }
+
     get types() {
+        return Types;
+    }
+
+    getTypes() {
         return Types;
     }
 
@@ -54,7 +70,15 @@ export class LuxarionEngine {
         return UtilsModule;
     }
 
+    getUtils() {
+        return UtilsModule;
+    }
+
     get security() {
+        return UtilsModule.SecurityCybork;
+    }
+
+    getSecurity() {
         return UtilsModule.SecurityCybork;
     }
 
@@ -62,8 +86,42 @@ export class LuxarionEngine {
         return UtilsModule.ConsoleUtils;
     }
 
+    getLogger() {
+        return UtilsModule.ConsoleUtils;
+    }
+
     get isInitialized() {
         return this.#initialized;
+    }
+
+    isInitialized() {
+        return this.#initialized;
+    }
+
+    get(name) {
+        return this.#container.resolve(name);
+    }
+
+    has(name) {
+        return this.#container.has(name);
+    }
+
+    register(name, definition, options) {
+        if (typeof definition === 'function') {
+            const lifetime = typeof options === 'string' ? options : (options?.type || 'singleton');
+            this.#container.register(name, definition, lifetime);
+        } else {
+            this.#container.registerInstance(name, definition);
+        }
+        return this;
+    }
+
+    singleton(name, definition, options) {
+        return this.register(name, definition, { ...options, type: 'singleton' });
+    }
+
+    factory(name, factory, options) {
+        return this.register(name, factory, { ...options, type: 'factory' });
     }
 
     /**

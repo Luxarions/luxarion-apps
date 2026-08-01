@@ -32,23 +32,30 @@ export class Container {
         return this.#parent;
     }
 
+    getParent() {
+        return this.#parent;
+    }
+
     /**
      * Register a service factory or constructor.
      * @param {string} name 
-     * @param {Function} factory 
-     * @param {string} lifetime - 'singleton' | 'factory' | 'transient'
+     * @param {Function|any} factory 
+     * @param {string|object} lifetime - 'singleton' | 'factory' | 'transient' or { type }
      */
     register(name, factory, lifetime = ServiceLifetime.SINGLETON) {
         if (!name || typeof name !== 'string') {
             throw new LuxarionError('Service name must be a non-empty string', 'INVALID_SERVICE_NAME');
         }
+        
         if (typeof factory !== 'function') {
-            throw new LuxarionError(`Factory for service '${name}' must be a function or class`, 'INVALID_FACTORY');
+            return this.registerInstance(name, factory);
         }
+
+        const resolvedLifetime = typeof lifetime === 'object' && lifetime !== null ? (lifetime.type || ServiceLifetime.SINGLETON) : lifetime;
 
         this.#services.set(name, {
             factory,
-            lifetime
+            lifetime: resolvedLifetime
         });
         return this;
     }
@@ -88,6 +95,13 @@ export class Container {
     alias(aliasName, targetName) {
         this.#aliases.set(aliasName, targetName);
         return this;
+    }
+
+    /**
+     * Resolve a service by name.
+     */
+    get(name) {
+        return this.resolve(name);
     }
 
     /**

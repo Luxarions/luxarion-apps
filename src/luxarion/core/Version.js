@@ -15,6 +15,7 @@ export const version = {
     prerelease: null,
     build: '20260801',
     full: VERSION,
+    VERSION: VERSION,
     vendor: VENDOR,
     name: NAME,
     

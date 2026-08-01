@@ -67,6 +67,14 @@ export const SerializeUtils = {
         });
     },
 
+    toString(data, indent = 2) {
+        return this.serialize(data, indent);
+    },
+
+    fromString(jsonString) {
+        return this.deserialize(jsonString);
+    },
+
     deepClone(obj) {
         if (obj === null || typeof obj !== 'object') return obj;
         return this.deserialize(this.serialize(obj));

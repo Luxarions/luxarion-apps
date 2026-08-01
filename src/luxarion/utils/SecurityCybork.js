@@ -182,11 +182,27 @@ export const SecurityCybork = (() => {
             return [...securityLog];
         },
 
+        getViolationLog() {
+            return this.getViolations();
+        },
+
         /**
          * Clear security violations log
          */
         clearViolations() {
             securityLog = [];
+        },
+
+        clearViolationLog() {
+            this.clearViolations();
+        },
+
+        initSecurity(options = {}) {
+            return this.init(options);
+        },
+
+        addAllowedOrigin(origin) {
+            return this.authorize(origin);
         }
     };
 })();

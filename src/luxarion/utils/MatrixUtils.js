@@ -242,10 +242,13 @@ export const MatrixUtils = {
     },
 
     /**
-     * Extract 6 Frustum planes from ViewProjection matrix
+     * Extract 6 Frustum planes from ViewProjection matrix or (projMatrix, viewMatrix)
      */
-    extractFrustumPlanes(vpMatrix) {
-        const m = vpMatrix;
+    extractFrustumPlanes(vpMatrix, viewMatrix) {
+        let m = vpMatrix;
+        if (viewMatrix) {
+            m = this.multiply4(vpMatrix, viewMatrix);
+        }
         const planes = [];
 
         // Left, Right, Bottom, Top, Near, Far
