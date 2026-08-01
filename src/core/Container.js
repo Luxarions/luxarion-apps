@@ -242,20 +242,37 @@ export class Container {
             if (typeof definition === 'function') {
                 // Check if the function expects dependencies as parameters or as an object
                 const fnString = definition.toString();
-                const hasParam = fnString.includes('deps') || fnString.includes('parameters');
                 
-                if (hasParam && !fnString.includes('...') && !fnString.includes('arguments')) {
-                    // If the function has a 'deps' parameter, pass the resolved dependencies object
-                    return definition(resolvedDeps, this, context);
-                } else {
-                    // Otherwise, pass dependencies as individual arguments
-                    const depsArray = Array.isArray(resolvedDeps) ? resolvedDeps : Object.values(resolvedDeps);
-                    if (depsArray.length > 0) {
-                        return definition(...depsArray, this, context);
-                    } else {
-                        return definition(this, context);
+                // If the function has parameters defined
+                if (fnString.includes('(') && fnString.includes(')')) {
+                    const paramMatch = fnString.match(/\(([^)]*)\)/);
+                    if (paramMatch) {
+                        const params = paramMatch[1].split(',').map(p => p.trim()).filter(p => p);
+                        
+                        // If the first parameter is named 'deps' or similar, pass the object
+                        if (params.length === 1 && (params[0] === 'deps' || params[0] === 'dependencies' || params[0] === 'params')) {
+                            return definition(resolvedDeps, this, context);
+                        }
+                        
+                        // If there are multiple parameters, pass them as individual arguments
+                        if (params.length > 0) {
+                            const depsArray = Array.isArray(resolvedDeps) ? resolvedDeps : Object.values(resolvedDeps);
+                            if (depsArray.length >= params.length) {
+                                return definition(...depsArray.slice(0, params.length), this, context);
+                            } else {
+                                // Fill missing dependencies with undefined
+                                const args = [];
+                                for (let i = 0; i < params.length; i++) {
+                                    args.push(depsArray[i] !== undefined ? depsArray[i] : undefined);
+                                }
+                                return definition(...args, this, context);
+                            }
+                        }
                     }
                 }
+                
+                // Fallback: try to call with dependencies object
+                return definition(resolvedDeps, this, context);
             }
             
             // If definition is a plain value, return it
@@ -513,6 +530,11 @@ export class Container {
                 },
                 info: (message, context = {}) => {
                     logger.info('[Luxarion] Info:', message, context);
+                },
+                debug: (message, context = {}) => {
+                    if (options.debug) {
+                        logger.debug('[Luxarion] Debug:', message, context);
+                    }
                 }
             };
         }, { dependencies: ['logger'] });
@@ -520,7 +542,8 @@ export class Container {
         // Register config service
         container.singleton('config', {
             environment: process?.env?.NODE_ENV || 'development',
-            debug: process?.env?.DEBUG === 'true' || false
+            debug: process?.env?.DEBUG === 'true' || false,
+            version: '1.0.0'
         });
 
         return container;
