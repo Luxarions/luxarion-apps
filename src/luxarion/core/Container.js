@@ -10,6 +10,8 @@
 
 import { ServiceLifetime, LuxarionError } from './Types.js';
 
+export const SERVICE_TYPES = ServiceLifetime;
+
 export class Container {
     #services = new Map();
     #instances = new Map();
@@ -67,11 +69,19 @@ export class Container {
         return this.register(name, factory, ServiceLifetime.SINGLETON);
     }
 
+    singleton(name, factory, options) {
+        return this.register(name, factory, options?.type || ServiceLifetime.SINGLETON);
+    }
+
     /**
      * Register a factory function called on every resolve.
      */
     registerFactory(name, factory) {
         return this.register(name, factory, ServiceLifetime.FACTORY);
+    }
+
+    factory(name, factoryFunc, options) {
+        return this.register(name, factoryFunc, options?.type || ServiceLifetime.FACTORY);
     }
 
     /**
@@ -87,6 +97,13 @@ export class Container {
             lifetime: ServiceLifetime.SINGLETON
         });
         return this;
+    }
+
+    clear() {
+        this.#services.clear();
+        this.#instances.clear();
+        this.#aliases.clear();
+        this.#resolving.clear();
     }
 
     /**
