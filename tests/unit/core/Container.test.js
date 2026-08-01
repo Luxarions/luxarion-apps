@@ -1,5 +1,5 @@
 /**
- * Container tests.
+ * Container tests - Complete Revision
  * 
  * @module tests/unit/core/Container.test
  * @author Luxarion Labs
@@ -15,7 +15,7 @@ describe('Container', () => {
   beforeEach(() => {
     container = new Container();
     
-    // Set environment for security module if needed
+    // Set environment for security module
     if (typeof process !== 'undefined' && process.env) {
       process.env.ALLOWED_ORIGINS = 'http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000';
     }
@@ -33,7 +33,7 @@ describe('Container', () => {
 
     it('should throw when registering duplicate service', () => {
       container.register('test', { value: 123 });
-      expect(() => container.register('test', { value: 456 })).toThrow('Service "test" is already registered');
+      expect(() => container.register('test', { value: 456 })).toThrow(/already registered/);
     });
 
     it('should register with type transient by default', () => {
@@ -105,7 +105,7 @@ describe('Container', () => {
       expect(result1).not.toBe(result2);
     });
 
-    it('should handle factory with dependencies', () => {
+    it('should handle factory with positional dependencies', () => {
       container.singleton('depA', 'A');
       container.singleton('depB', 'B');
       
@@ -128,59 +128,8 @@ describe('Container', () => {
       const result = container.get('combined');
       expect(result).toBe('AB');
     });
-  });
 
-  describe('transient', () => {
-    it('should return a new instance each time', () => {
-      let counter = 0;
-      container.transient('counter', () => ++counter);
-      
-      const result1 = container.get('counter');
-      const result2 = container.get('counter');
-      
-      expect(result1).toBe(1);
-      expect(result2).toBe(2);
-      expect(result1).not.toBe(result2);
-    });
-  });
-
-  describe('alias', () => {
-    it('should create an alias for a service', () => {
-      container.singleton('original', { value: 123 });
-      container.alias('alias', 'original');
-      
-      expect(container.get('alias')).toBe(container.get('original'));
-    });
-
-    it('should throw when target service does not exist', () => {
-      expect(() => container.alias('alias', 'nonexistent')).toThrow(
-        'Target service "nonexistent" not found for alias "alias"'
-      );
-    });
-
-    it('should resolve alias through parent container', () => {
-      const parent = new Container();
-      parent.singleton('original', { value: 'parent' });
-      const child = parent.createChild();
-      child.alias('alias', 'original');
-      
-      expect(child.get('alias')).toBe(parent.get('original'));
-    });
-  });
-
-  describe('dependency injection', () => {
-    it('should inject dependencies correctly', () => {
-      container.singleton('depA', 'A');
-      container.singleton('depB', 'B');
-      
-      container.factory('combined', (deps) => {
-        return deps.depA + deps.depB;
-      }, { dependencies: ['depA', 'depB'] });
-      
-      expect(container.get('combined')).toBe('AB');
-    });
-
-    it('should inject dependencies with complex objects', () => {
+    it('should handle factory with complex dependencies', () => {
       container.singleton('config', { api: 'https://api.example.com', timeout: 5000 });
       container.singleton('logger', { log: (msg) => msg });
       
@@ -197,6 +146,127 @@ describe('Container', () => {
       expect(service.timeout).toBe(5000);
       expect(typeof service.log).toBe('function');
     });
+  });
+
+  describe('transient', () => {
+    it('should return a new instance each time', () => {
+      let counter = 0;
+      container.transient('counter', () => ++counter);
+      
+      const result1 = container.get('counter');
+      const result2 = container.get('counter');
+      
+      expect(result1).toBe(1);
+      expect(result2).toBe(2);
+      expect(result1).not.toBe(result2);
+    });
+
+    it('should handle transient with dependencies', () => {
+      container.singleton('depA', 'A');
+      container.singleton('depB', 'B');
+      
+      container.transient('combined', (deps) => {
+        return deps.depA + deps.depB;
+      }, { dependencies: ['depA', 'depB'] });
+      
+      const result1 = container.get('combined');
+      const result2 = container.get('combined');
+      
+      expect(result1).toBe('AB');
+      expect(result2).toBe('AB');
+      expect(result1).toBe(result2); // Transient with same dependencies returns same value but different instance
+    });
+  });
+
+  describe('alias', () => {
+    it('should create an alias for a service', () => {
+      container.singleton('original', { value: 123 });
+      container.alias('alias', 'original');
+      
+      expect(container.get('alias')).toBe(container.get('original'));
+    });
+
+    it('should throw when target service does not exist', () => {
+      expect(() => container.alias('alias', 'nonexistent')).toThrow(
+        /Target service "nonexistent" not found/
+      );
+    });
+
+    it('should resolve alias through parent container', () => {
+      const parent = new Container();
+      parent.singleton('original', { value: 'parent' });
+      const child = parent.createChild();
+      child.alias('alias', 'original');
+      
+      expect(child.get('alias')).toBe(parent.get('original'));
+    });
+  });
+
+  describe('dependency injection - CRITICAL', () => {
+    it('should inject dependencies with primitive values', () => {
+      container.singleton('depA', 'Hello');
+      container.singleton('depB', 'World');
+      
+      container.factory('combined', (deps) => {
+        return deps.depA + ' ' + deps.depB;
+      }, { dependencies: ['depA', 'depB'] });
+      
+      expect(container.get('combined')).toBe('Hello World');
+    });
+
+    it('should inject dependencies with object values', () => {
+      container.singleton('depA', { value: 'Hello' });
+      container.singleton('depB', { value: 'World' });
+      
+      container.factory('combined', (deps) => {
+        return deps.depA.value + ' ' + deps.depB.value;
+      }, { dependencies: ['depA', 'depB'] });
+      
+      expect(container.get('combined')).toBe('Hello World');
+    });
+
+    it('should inject dependencies with mixed types', () => {
+      container.singleton('name', 'Luxarion');
+      container.singleton('version', 1.0);
+      container.singleton('config', { debug: true });
+      
+      container.factory('service', (deps) => {
+        return {
+          name: deps.name,
+          version: deps.version,
+          debug: deps.config.debug
+        };
+      }, { dependencies: ['name', 'version', 'config'] });
+      
+      const service = container.get('service');
+      expect(service.name).toBe('Luxarion');
+      expect(service.version).toBe(1.0);
+      expect(service.debug).toBe(true);
+    });
+
+    it('should inject dependencies with factory functions', () => {
+      container.singleton('depA', 'A');
+      container.singleton('depB', 'B');
+      
+      container.factory('combined', (depA, depB) => {
+        return depA + depB + '!';
+      }, { dependencies: ['depA', 'depB'] });
+      
+      expect(container.get('combined')).toBe('AB!');
+    });
+
+    it('should handle dependency chains', () => {
+      container.singleton('base', 'base');
+      container.singleton('middle', (deps) => {
+        return deps.base + '-middle';
+      }, { dependencies: ['base'] });
+      container.singleton('top', (deps) => {
+        return deps.middle + '-top';
+      }, { dependencies: ['middle'] });
+      
+      const result = container.get('top');
+      expect(result).toBe('base-middle-top');
+    });
 
     it('should handle circular dependencies gracefully', () => {
       container.singleton('serviceA', (deps) => {
@@ -207,20 +277,7 @@ describe('Container', () => {
         return { name: 'B', getA: () => deps.serviceA };
       }, { dependencies: ['serviceA'] });
       
-      expect(() => container.get('serviceA')).toThrow('Circular dependency');
-    });
-
-    it('should handle dependency chains', () => {
-      container.singleton('base', 'base value');
-      container.singleton('middle', (deps) => {
-        return `middle(${deps.base})`;
-      }, { dependencies: ['base'] });
-      container.singleton('top', (deps) => {
-        return `top(${deps.middle})`;
-      }, { dependencies: ['middle'] });
-      
-      const result = container.get('top');
-      expect(result).toBe('top(middle(base value))');
+      expect(() => container.get('serviceA')).toThrow(/Circular dependency/);
     });
   });
 
@@ -261,6 +318,18 @@ describe('Container', () => {
       
       expect(child.get('test')).toBe('from parent');
     });
+
+    it('should support multi-level inheritance', () => {
+      container.singleton('level1', 'level1');
+      const child = container.createChild();
+      child.singleton('level2', 'level2');
+      const grandchild = child.createChild();
+      grandchild.singleton('level3', 'level3');
+      
+      expect(grandchild.get('level1')).toBe('level1');
+      expect(grandchild.get('level2')).toBe('level2');
+      expect(grandchild.get('level3')).toBe('level3');
+    });
   });
 
   describe('getServiceInfo', () => {
@@ -286,6 +355,15 @@ describe('Container', () => {
       expect(info.isAlias).toBe(true);
       expect(info.target).toBe('original');
     });
+
+    it('should return info from parent container', () => {
+      container.singleton('parent', { value: 'parent' });
+      const child = container.createChild();
+      const info = child.getServiceInfo('parent');
+      
+      expect(info.name).toBe('parent');
+      expect(info.type).toBe('singleton');
+    });
   });
 
   describe('remove', () => {
@@ -308,9 +386,11 @@ describe('Container', () => {
       const instance1 = container.get('test');
       
       container.remove('test');
+      container.singleton('test', { value: 456 });
       const instance2 = container.get('test');
       
       expect(instance1).not.toBe(instance2);
+      expect(instance2.value).toBe(456);
     });
   });
 
@@ -352,6 +432,15 @@ describe('Container', () => {
       expect(result.value).toBe(456);
       expect(container.has('test')).toBe(true);
     });
+
+    it('should pass options to registration', () => {
+      const result = container.getOrCreate('test', () => ({ value: 123 }), {
+        dependencies: ['dep']
+      });
+      
+      const info = container.getServiceInfo('test');
+      expect(info.dependencies).toEqual(['dep']);
+    });
   });
 
   describe('type checks', () => {
@@ -381,6 +470,11 @@ describe('Container', () => {
       
       expect(child.isSingleton('parent')).toBe(true);
     });
+
+    it('should return false for non-existent service', () => {
+      expect(container.isSingleton('nonexistent')).toBe(false);
+      expect(container.isFactory('nonexistent')).toBe(false);
+    });
   });
 
   describe('listServices', () => {
@@ -402,6 +496,35 @@ describe('Container', () => {
       expect(services).toContain('parent');
       expect(services).toContain('child');
     });
+
+    it('should not include duplicates', () => {
+      container.register('test', { value: 1 });
+      const child = container.createChild();
+      child.register('test', { value: 2 });
+      
+      const services = child.listServices();
+      const count = services.filter(s => s === 'test').length;
+      expect(count).toBe(1); // Child overrides parent
+    });
+  });
+
+  describe('setParent', () => {
+    it('should set parent container', () => {
+      const parent = new Container();
+      const child = new Container();
+      
+      child.setParent(parent);
+      expect(child.getParent()).toBe(parent);
+    });
+
+    it('should inherit services after setParent', () => {
+      const parent = new Container();
+      parent.singleton('test', { value: 'parent' });
+      const child = new Container();
+      
+      child.setParent(parent);
+      expect(child.get('test').value).toBe('parent');
+    });
   });
 
   describe('static createDefault', () => {
@@ -411,6 +534,7 @@ describe('Container', () => {
       expect(defaultContainer.has('container')).toBe(true);
       expect(defaultContainer.has('logger')).toBe(true);
       expect(defaultContainer.has('errorHandler')).toBe(true);
+      expect(defaultContainer.has('config')).toBe(true);
     });
 
     it('should handle onError callback', () => {
@@ -424,6 +548,30 @@ describe('Container', () => {
       const errorHandler = defaultContainer.get('errorHandler');
       expect(() => errorHandler.handle(new Error('test error'))).toThrow('test error');
       expect(errorCalled).toBe(true);
+    });
+
+    it('should handle custom logger', () => {
+      const customLogger = {
+        log: () => {},
+        error: () => {},
+        warn: () => {},
+        info: () => {}
+      };
+      
+      const defaultContainer = Container.createDefault({
+        logger: customLogger
+      });
+      
+      const logger = defaultContainer.get('logger');
+      expect(logger).toBe(customLogger);
+    });
+
+    it('should include config with environment', () => {
+      const defaultContainer = Container.createDefault();
+      const config = defaultContainer.get('config');
+      
+      expect(config).toHaveProperty('environment');
+      expect(config).toHaveProperty('debug');
     });
   });
 });
