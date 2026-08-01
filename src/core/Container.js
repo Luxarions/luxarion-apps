@@ -230,14 +230,61 @@ export class Container {
 
         // If it's a factory function
         if (service.type === ServiceType.FACTORY || typeof definition === 'function') {
-            const deps = autoResolve ? this.#resolveDependencies(dependencies) : {};
-            return definition(deps, this, context);
+            let resolvedDeps;
+            
+            if (autoResolve && dependencies && dependencies.length > 0) {
+                resolvedDeps = this.#resolveDependencies(dependencies);
+            } else {
+                resolvedDeps = {};
+            }
+            
+            // If definition is a factory function, call it with resolved dependencies
+            if (typeof definition === 'function') {
+                // Check if the function expects dependencies as parameters or as an object
+                const fnString = definition.toString();
+                const hasParam = fnString.includes('deps') || fnString.includes('parameters');
+                
+                if (hasParam && !fnString.includes('...') && !fnString.includes('arguments')) {
+                    // If the function has a 'deps' parameter, pass the resolved dependencies object
+                    return definition(resolvedDeps, this, context);
+                } else {
+                    // Otherwise, pass dependencies as individual arguments
+                    const depsArray = Array.isArray(resolvedDeps) ? resolvedDeps : Object.values(resolvedDeps);
+                    if (depsArray.length > 0) {
+                        return definition(...depsArray, this, context);
+                    } else {
+                        return definition(this, context);
+                    }
+                }
+            }
+            
+            // If definition is a plain value, return it
+            return definition;
         }
 
         // If it's a class constructor
         if (typeof definition === 'function' && definition.prototype) {
-            const deps = autoResolve ? this.#resolveDependencies(dependencies) : [];
-            return new definition(...deps);
+            let resolvedDeps;
+            
+            if (autoResolve && dependencies && dependencies.length > 0) {
+                resolvedDeps = this.#resolveDependencies(dependencies);
+            } else {
+                resolvedDeps = [];
+            }
+            
+            // If resolvedDeps is an array of resolved dependencies
+            if (Array.isArray(resolvedDeps)) {
+                return new definition(...resolvedDeps);
+            }
+            
+            // If resolvedDeps is an object, convert to array based on dependency names
+            if (typeof resolvedDeps === 'object' && !Array.isArray(resolvedDeps)) {
+                const depsArray = dependencies.map(depName => resolvedDeps[depName]);
+                return new definition(...depsArray);
+            }
+            
+            // If no dependencies, just instantiate
+            return new definition();
         }
 
         // If it's a plain value or object
@@ -247,7 +294,7 @@ export class Container {
     /**
      * Resolve dependencies for a service.
      * @private
-     * @param {Array<string>} dependencies - Dependency names.
+     * @param {Array<string|Object>} dependencies - Dependency names or mapping objects.
      * @returns {Object|Array} Resolved dependencies.
      */
     #resolveDependencies(dependencies) {
@@ -256,24 +303,50 @@ export class Container {
         }
 
         // Check if dependencies are named or positional
-        const isNamed = dependencies.some(d => typeof d === 'object');
+        const isNamed = dependencies.some(d => typeof d === 'object' && d !== null && !Array.isArray(d));
         
         if (isNamed) {
             const result = {};
             for (const dep of dependencies) {
-                if (typeof dep === 'object') {
+                if (typeof dep === 'object' && dep !== null && !Array.isArray(dep)) {
+                    // dep is a mapping object like { alias: 'serviceName' }
                     for (const [key, name] of Object.entries(dep)) {
-                        result[key] = this.get(name);
+                        try {
+                            result[key] = this.get(name);
+                        } catch (error) {
+                            // If dependency not found, store undefined and let caller handle it
+                            result[key] = undefined;
+                        }
                     }
-                } else {
-                    result[dep] = this.get(dep);
+                } else if (typeof dep === 'string') {
+                    // dep is a service name
+                    try {
+                        result[dep] = this.get(dep);
+                    } catch (error) {
+                        // If dependency not found, store undefined and let caller handle it
+                        result[dep] = undefined;
+                    }
                 }
             }
             return result;
         }
 
-        // Positional dependencies
-        return dependencies.map(name => this.get(name));
+        // Positional dependencies - resolve each name in order
+        const result = [];
+        for (const dep of dependencies) {
+            if (typeof dep === 'string') {
+                try {
+                    result.push(this.get(dep));
+                } catch (error) {
+                    // If dependency not found, push undefined and let caller handle it
+                    result.push(undefined);
+                }
+            } else {
+                // If dep is not a string, treat it as a value to inject
+                result.push(dep);
+            }
+        }
+        return result;
     }
 
     /**
@@ -410,6 +483,8 @@ export class Container {
     /**
      * Create a container with default services pre-registered.
      * @param {Object} [options] - Configuration options.
+     * @param {Function} [options.onError] - Error handler callback.
+     * @param {Object} [options.logger] - Logger instance.
      * @returns {Container} Configured container.
      */
     static createDefault(options = {}) {
@@ -420,18 +495,32 @@ export class Container {
         
         // Register utilities
         container.factory('logger', () => {
-            return console;
+            return options.logger || console;
         });
         
         container.factory('errorHandler', (deps) => {
+            const logger = deps.logger || console;
             return {
-                handle: (error) => {
-                    console.error('[Luxarion]', error);
+                handle: (error, context = {}) => {
+                    logger.error('[Luxarion] Error:', error.message, context);
                     if (options.onError) {
-                        options.onError(error);
+                        options.onError(error, context);
                     }
+                    throw error;
+                },
+                warn: (message, context = {}) => {
+                    logger.warn('[Luxarion] Warning:', message, context);
+                },
+                info: (message, context = {}) => {
+                    logger.info('[Luxarion] Info:', message, context);
                 }
             };
+        }, { dependencies: ['logger'] });
+
+        // Register config service
+        container.singleton('config', {
+            environment: process?.env?.NODE_ENV || 'development',
+            debug: process?.env?.DEBUG === 'true' || false
         });
 
         return container;
