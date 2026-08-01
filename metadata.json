@@ -1,0 +1,6 @@
+{
+  "name": "Luxarion Engine Studio",
+  "description": "Interactive WebGL 3D Engine, Dependency Injection Container, Security Cybork Shield, and Developer Playground for Luxarion Engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
