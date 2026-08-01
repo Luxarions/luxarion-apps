@@ -368,14 +368,29 @@ export class Container {
 
     /**
      * Get all registered service names.
-     * @returns {Array<string>} Array of service names.
+     * Returns unique service names, with child services overriding parent services.
+     * @returns {Array<string>} Array of unique service names.
      */
     listServices() {
-        const names = Array.from(this.#services.keys());
-        if (this.#parent) {
-            return [...names, ...this.#parent.listServices()];
+        const names = new Set();
+        
+        // Add all services from this container
+        for (const name of this.#services.keys()) {
+            names.add(name);
         }
-        return names;
+        
+        // Add services from parent container (if they don't already exist in this container)
+        if (this.#parent) {
+            const parentServices = this.#parent.listServices();
+            for (const name of parentServices) {
+                // Only add if not already defined in this container (child override)
+                if (!this.#services.has(name)) {
+                    names.add(name);
+                }
+            }
+        }
+        
+        return Array.from(names);
     }
 
     /**
@@ -502,6 +517,7 @@ export class Container {
      * @param {Object} [options] - Configuration options.
      * @param {Function} [options.onError] - Error handler callback.
      * @param {Object} [options.logger] - Logger instance.
+     * @param {boolean} [options.debug] - Enable debug mode.
      * @returns {Container} Configured container.
      */
     static createDefault(options = {}) {
