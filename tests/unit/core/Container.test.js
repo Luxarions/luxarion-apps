@@ -485,6 +485,7 @@ describe('Container', () => {
       const services = container.listServices();
       expect(services).toContain('test1');
       expect(services).toContain('test2');
+      expect(services.length).toBe(2);
     });
 
     it('should include parent services', () => {
@@ -495,16 +496,78 @@ describe('Container', () => {
       const services = child.listServices();
       expect(services).toContain('parent');
       expect(services).toContain('child');
+      expect(services.length).toBe(2);
     });
 
-    it('should not include duplicates', () => {
-      container.register('test', { value: 1 });
+    it('should handle child overriding parent without duplicates', () => {
+      container.register('test', { value: 'parent' });
       const child = container.createChild();
-      child.register('test', { value: 2 });
+      child.register('test', { value: 'child' });
       
       const services = child.listServices();
       const count = services.filter(s => s === 'test').length;
-      expect(count).toBe(1); // Child overrides parent
+      expect(count).toBe(1);
+      expect(child.get('test').value).toBe('child');
+    });
+
+    it('should list services from all levels of hierarchy', () => {
+      container.register('level1', { value: 1 });
+      const child = container.createChild();
+      child.register('level2', { value: 2 });
+      const grandchild = child.createChild();
+      grandchild.register('level3', { value: 3 });
+      
+      const services = grandchild.listServices();
+      expect(services).toContain('level1');
+      expect(services).toContain('level2');
+      expect(services).toContain('level3');
+      expect(services.length).toBe(3);
+    });
+
+    it('should include only the most specific service when overridden', () => {
+      container.register('test', { value: 'level1' });
+      const child = container.createChild();
+      child.register('test', { value: 'level2' });
+      const grandchild = child.createChild();
+      grandchild.register('test', { value: 'level3' });
+      
+      const services = grandchild.listServices();
+      const count = services.filter(s => s === 'test').length;
+      expect(count).toBe(1);
+      expect(grandchild.get('test').value).toBe('level3');
+    });
+
+    it('should not include services from parent that are overridden', () => {
+      container.register('override', { value: 'parent' });
+      container.register('onlyParent', { value: 'onlyParent' });
+      
+      const child = container.createChild();
+      child.register('override', { value: 'child' });
+      child.register('onlyChild', { value: 'onlyChild' });
+      
+      const services = child.listServices();
+      
+      expect(services).toContain('override');
+      expect(services).toContain('onlyParent');
+      expect(services).toContain('onlyChild');
+      expect(services.length).toBe(3);
+      
+      // Verify that override is from child
+      expect(child.get('override').value).toBe('child');
+      expect(container.get('override').value).toBe('parent');
+    });
+
+    it('should handle empty containers', () => {
+      const emptyContainer = new Container();
+      expect(emptyContainer.listServices()).toEqual([]);
+    });
+
+    it('should handle parent with no services', () => {
+      const child = container.createChild();
+      child.register('test', { value: 123 });
+      
+      const services = child.listServices();
+      expect(services).toEqual(['test']);
     });
   });
 
