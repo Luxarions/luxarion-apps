@@ -3,7 +3,7 @@ import { Luxarion, Container, ServiceLifetime } from '../luxarion';
 import { Database, Plus, RefreshCw, Layers, CheckCircle2, AlertTriangle, ArrowRight, Play, Server, Code } from 'lucide-react';
 
 export const ContainerInspector: React.FC = () => {
-  const [activeContainer, setActiveContainer] = useState<any>(Luxarion.container);
+  const [activeContainer, setActiveContainer] = useState<any>(Luxarion.getContainer());
   const [childContainer, setChildContainer] = useState<any | null>(null);
   const [serviceName, setServiceName] = useState('');
   const [serviceLifetime, setServiceLifetime] = useState<'singleton' | 'factory' | 'instance'>('singleton');
@@ -15,7 +15,7 @@ export const ContainerInspector: React.FC = () => {
     error?: string;
   } | null>(null);
 
-  const [registeredList, setRegisteredList] = useState<string[]>(Luxarion.container.listServices());
+  const [registeredList, setRegisteredList] = useState<string[]>(Luxarion.getContainer().listServices());
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,10 +24,10 @@ export const ContainerInspector: React.FC = () => {
     try {
       if (serviceLifetime === 'instance') {
         const parsed = eval(`(${serviceValue})`);
-        activeContainer.registerInstance(serviceName, parsed);
+        activeContainer.register(serviceName, parsed);
       } else {
         const factory = eval(`(container) => (${serviceValue})`);
-        activeContainer.register(serviceName, factory, serviceLifetime);
+        activeContainer.register(serviceName, factory, { type: serviceLifetime });
       }
 
       setRegisteredList(activeContainer.listServices());
@@ -40,7 +40,7 @@ export const ContainerInspector: React.FC = () => {
   const handleResolve = (name: string) => {
     const start = performance.now();
     try {
-      const res = activeContainer.resolve(name);
+      const res = activeContainer.get(name);
       const timeMs = performance.now() - start;
       
       let strVal = '';
@@ -77,13 +77,13 @@ export const ContainerInspector: React.FC = () => {
   };
 
   const handleTestCircular = () => {
-    const c = new Container();
-    c.register('ServiceA', (ct) => ct.resolve('ServiceB'));
-    c.register('ServiceB', (ct) => ct.resolve('ServiceA'));
+    const c = Luxarion.getContainer().createChild();
+    c.register('ServiceA', (deps: any, ct: any) => ct.get('ServiceB'));
+    c.register('ServiceB', (deps: any, ct: any) => ct.get('ServiceA'));
 
     const start = performance.now();
     try {
-      c.resolve('ServiceA');
+      c.get('ServiceA');
     } catch (err: any) {
       setResolutionOutput({
         service: 'ServiceA (Circular Test)',
@@ -105,7 +105,7 @@ export const ContainerInspector: React.FC = () => {
               <h3 className="text-sm font-semibold text-slate-200">Registered Services</h3>
             </div>
             <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-800 text-cyan-400 border border-slate-700">
-              {activeContainer.parent ? 'Child Container' : 'Root Container'}
+              {activeContainer.getParent && activeContainer.getParent() ? 'Child Container' : 'Root Container'}
             </span>
           </div>
 
@@ -114,11 +114,11 @@ export const ContainerInspector: React.FC = () => {
             <button
               id="btn-root-container"
               onClick={() => {
-                setActiveContainer(Luxarion.container);
-                setRegisteredList(Luxarion.container.listServices());
+                setActiveContainer(Luxarion.getContainer());
+                setRegisteredList(Luxarion.getContainer().listServices());
               }}
               className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium border transition-all ${
-                activeContainer === Luxarion.container
+                activeContainer === Luxarion.getContainer()
                   ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
                   : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
               }`}

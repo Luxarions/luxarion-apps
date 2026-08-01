@@ -260,7 +260,7 @@ export const Viewport3D: React.FC = () => {
 
       // Compute matrices via Luxarion MatrixUtils
       const modelMat = MatrixUtils.rotationXYZ(rotRef.current.x, rotRef.current.y, 0);
-      const eye = [0, 2, fovDistance];
+      const eye: [number, number, number] = [0, 2, fovDistance];
       const viewMat = MatrixUtils.lookAt(eye, [0, 0, 0], [0, 1, 0]);
 
       const aspect = canvas.width / canvas.height;
@@ -275,7 +275,7 @@ export const Viewport3D: React.FC = () => {
       const vpMat = MatrixUtils.multiply4(projMat, viewMat);
 
       // Extract frustum planes
-      const planes = MatrixUtils.extractFrustumPlanes(vpMat);
+      const planes = MatrixUtils.extractFrustumPlanes(projMat, viewMat);
 
       setMatrices({
         model: Array.from(modelMat),

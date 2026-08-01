@@ -20,7 +20,7 @@ export const Header: React.FC = () => {
                 Luxarion Engine Studio
               </h1>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                v{Luxarion.version.full}
+                v{Luxarion.getVersion().VERSION}
               </span>
             </div>
             <p className="text-xs text-slate-400">
@@ -33,7 +33,7 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-3 font-mono text-xs">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300">
             <Database size={14} className="text-cyan-400" />
-            <span>DI Container: <strong className="text-cyan-300">{Luxarion.container.listServices().length} Services</strong></span>
+            <span>DI Container: <strong className="text-cyan-300">{Luxarion.getContainer().listServices().length} Services</strong></span>
           </div>
 
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300">

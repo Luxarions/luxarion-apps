@@ -15,7 +15,7 @@ export function App() {
 
   useEffect(() => {
     // Initialize Luxarion Engine on app mount
-    Luxarion.init({ allowUnknownOrigin: true });
+    Luxarion.init({ debug: true });
   }, []);
 
   return (

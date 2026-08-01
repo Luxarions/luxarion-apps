@@ -36,24 +36,24 @@ export const TestRunner: React.FC = () => {
 
       try {
         if (t.id === '1') {
-          const c = new Container();
-          c.registerSingleton('testService', () => ({ val: 42 }));
-          const res1 = c.resolve('testService');
-          const res2 = c.resolve('testService');
+          const c = Luxarion.getContainer().createChild();
+          c.register('testService', () => ({ val: 42 }), { type: 'singleton' });
+          const res1: any = c.get('testService');
+          const res2: any = c.get('testService');
           if (res1 !== res2 || res1.val !== 42) throw new Error('Singleton identity mismatch');
         } else if (t.id === '2') {
-          const parent = new Container();
-          parent.registerInstance('parentService', 'hello_from_parent');
+          const parent = Luxarion.getContainer().createChild();
+          parent.register('parentService', 'hello_from_parent');
           const child = parent.createChild();
-          const val = child.resolve('parentService');
+          const val = child.get('parentService');
           if (val !== 'hello_from_parent') throw new Error('Child container failed to inherit parent service');
         } else if (t.id === '3') {
-          const c = new Container();
-          c.register('A', (ct) => ct.resolve('B'));
-          c.register('B', (ct) => ct.resolve('A'));
+          const c = Luxarion.getContainer().createChild();
+          c.register('A', (deps: any, ct: any) => ct.get('B'));
+          c.register('B', (deps: any, ct: any) => ct.get('A'));
           let threw = false;
           try {
-            c.resolve('A');
+            c.get('A');
           } catch {
             threw = true;
           }
@@ -71,8 +71,8 @@ export const TestRunner: React.FC = () => {
             set: new Set([10, 20]),
             arr: new Float32Array([1.5, 2.5])
           };
-          const json = SerializeUtils.serialize(original);
-          const restored = SerializeUtils.deserialize(json);
+          const json = SerializeUtils.toString(original);
+          const restored: any = SerializeUtils.fromString(json);
           if (restored.big !== 9007199254740991n || restored.map.get('key') !== 'value') {
             throw new Error('SerializeUtils roundtrip deserialization failed');
           }
@@ -81,13 +81,13 @@ export const TestRunner: React.FC = () => {
           const rev = MatrixUtils.toReversedProjection(proj);
           if (rev[10] !== -proj[10]) throw new Error('MatrixUtils.toReversedProjection failed');
         } else if (t.id === '7') {
-          SecurityCybork.init({ allowUnknownOrigin: true });
+          SecurityCybork.initSecurity({ strictMode: false });
           const guarded = SecurityCybork.guard(() => 'SECRET_RESULT', 'testGuard');
           const ok = guarded();
           if (ok !== 'SECRET_RESULT') throw new Error('Guarded function authorization failed');
         } else if (t.id === '8') {
-          Luxarion.init({ allowUnknownOrigin: true });
-          if (!Luxarion.isInitialized) throw new Error('Luxarion initialization check failed');
+          Luxarion.init({ debug: true });
+          if (!Luxarion.isInitialized()) throw new Error('Luxarion initialization check failed');
         }
 
         t.status = 'passed';

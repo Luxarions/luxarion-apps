@@ -16,26 +16,27 @@ export const SecurityShield: React.FC = () => {
   const [sealStatus, setSealStatus] = useState<string | null>(null);
 
   // Violations log state
-  const [violations, setViolations] = useState(SecurityCybork.getViolations());
+  const [violations, setViolations] = useState(SecurityCybork.getViolationLog());
 
   const handleAuthToggle = () => {
     if (isAuth) {
-      // Force deauthorize by calling init with strict fake origin
-      SecurityCybork.init({ allowUnknownOrigin: false });
+      SecurityCybork.initSecurity({ strictMode: true });
       setIsAuth(SecurityCybork.isAuthorized());
-      setViolations(SecurityCybork.getViolations());
+      setViolations(SecurityCybork.getViolationLog());
     } else {
-      const ok = SecurityCybork.authorize('LUXARION_CYBORK_BYPASS');
-      setIsAuth(ok);
-      setViolations(SecurityCybork.getViolations());
+      SecurityCybork.addAllowedOrigin('*');
+      setIsAuth(SecurityCybork.isAuthorized());
+      setViolations(SecurityCybork.getViolationLog());
     }
   };
 
   const handleAuthorizeWithKey = (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = SecurityCybork.authorize(authKeyInput);
+    if (authKeyInput) {
+      SecurityCybork.addAllowedOrigin(authKeyInput);
+    }
     setIsAuth(SecurityCybork.isAuthorized());
-    setViolations(SecurityCybork.getViolations());
+    setViolations(SecurityCybork.getViolationLog());
     setAuthKeyInput('');
   };
 
@@ -48,7 +49,7 @@ export const SecurityShield: React.FC = () => {
     } else {
       setGuardedResult(String(result));
     }
-    setViolations(SecurityCybork.getViolations());
+    setViolations(SecurityCybork.getViolationLog());
   };
 
   const handleTestSealObject = () => {
@@ -258,7 +259,7 @@ export const SecurityShield: React.FC = () => {
             <button
               id="btn-clear-violations"
               onClick={() => {
-                SecurityCybork.clearViolations();
+                SecurityCybork.clearViolationLog();
                 setViolations([]);
               }}
               className="text-xs text-slate-500 hover:text-slate-300 transition-all font-mono"
