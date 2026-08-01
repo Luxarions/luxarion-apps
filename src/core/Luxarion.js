@@ -336,7 +336,6 @@ const Luxarion = LuxarionEngine.create();
  */
 export {
     Luxarion,
-    LuxarionEngine,
     ConstantsModule,
     VersionModule,
     TypesModule,
