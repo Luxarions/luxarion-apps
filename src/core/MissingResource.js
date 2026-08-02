@@ -12,17 +12,20 @@ const Resource = require('../resource/Resource.js');
  * @extends Resource
  */
 class MissingResource extends Resource {
+  #originalPath = '';
+  #originalType = '';
+  #error = '';
+  #canRecover = false;
+  #recoveryData = null;
+  #fallbackResource = null;
+  #recoveryAttempts = 0;
+  #maxRecoveryAttempts = 3;
+
   constructor(originalPath = '', originalType = '') {
     super();
     this._type = 'MissingResource';
-    this._originalPath = originalPath;
-    this._originalType = originalType;
-    this._error = '';
-    this._canRecover = false;
-    this._recoveryData = null;
-    this._fallbackResource = null;
-    this._recoveryAttempts = 0;
-    this._maxRecoveryAttempts = 3;
+    this.#originalPath = originalPath;
+    this.#originalType = originalType;
   }
 
   /**
@@ -30,7 +33,7 @@ class MissingResource extends Resource {
    * @returns {string}
    */
   get originalPath() {
-    return this._originalPath;
+    return this.#originalPath;
   }
 
   /**
@@ -38,7 +41,7 @@ class MissingResource extends Resource {
    * @param {string} value - Original path
    */
   set originalPath(value) {
-    this._originalPath = value;
+    this.#originalPath = value;
   }
 
   /**
@@ -46,7 +49,7 @@ class MissingResource extends Resource {
    * @returns {string}
    */
   get originalType() {
-    return this._originalType;
+    return this.#originalType;
   }
 
   /**
@@ -54,7 +57,7 @@ class MissingResource extends Resource {
    * @param {string} value - Original type
    */
   set originalType(value) {
-    this._originalType = value;
+    this.#originalType = value;
   }
 
   /**
@@ -62,7 +65,7 @@ class MissingResource extends Resource {
    * @returns {string}
    */
   get error() {
-    return this._error;
+    return this.#error;
   }
 
   /**
@@ -70,7 +73,7 @@ class MissingResource extends Resource {
    * @param {string} value - Error
    */
   set error(value) {
-    this._error = value;
+    this.#error = value;
   }
 
   /**
@@ -78,7 +81,7 @@ class MissingResource extends Resource {
    * @returns {boolean}
    */
   canRecover() {
-    return this._canRecover;
+    return this.#canRecover;
   }
 
   /**
@@ -86,7 +89,7 @@ class MissingResource extends Resource {
    * @returns {Object|null}
    */
   get recoveryData() {
-    return this._recoveryData;
+    return this.#recoveryData;
   }
 
   /**
@@ -94,8 +97,8 @@ class MissingResource extends Resource {
    * @param {Object} value - Recovery data
    */
   set recoveryData(value) {
-    this._recoveryData = value;
-    this._canRecover = true;
+    this.#recoveryData = value;
+    this.#canRecover = true;
   }
 
   /**
@@ -104,7 +107,7 @@ class MissingResource extends Resource {
    * @returns {MissingResource} This instance
    */
   setFallback(resource) {
-    this._fallbackResource = resource;
+    this.#fallbackResource = resource;
     return this;
   }
 
@@ -113,7 +116,7 @@ class MissingResource extends Resource {
    * @returns {Resource|null}
    */
   getFallback() {
-    return this._fallbackResource;
+    return this.#fallbackResource;
   }
 
   /**
@@ -122,29 +125,29 @@ class MissingResource extends Resource {
    * @returns {Promise<Resource>}
    */
   async recover(loader = null) {
-    if (this._recoveryAttempts >= this._maxRecoveryAttempts) {
+    if (this.#recoveryAttempts >= this.#maxRecoveryAttempts) {
       throw new Error('Max recovery attempts exceeded');
     }
     
-    this._recoveryAttempts++;
+    this.#recoveryAttempts++;
     
-    if (loader && this._originalPath) {
+    if (loader && this.#originalPath) {
       try {
-        const resource = await loader(this._originalPath);
-        this._canRecover = true;
+        const resource = await loader(this.#originalPath);
+        this.#canRecover = true;
         this.emit('recovered', resource);
         return resource;
       } catch (error) {
-        this._error = error.message;
-        this._canRecover = false;
+        this.#error = error.message;
+        this.#canRecover = false;
         throw error;
       }
     }
     
-    if (this._fallbackResource) {
-      this._canRecover = true;
-      this.emit('recovered', this._fallbackResource);
-      return this._fallbackResource;
+    if (this.#fallbackResource) {
+      this.#canRecover = true;
+      this.emit('recovered', this.#fallbackResource);
+      return this.#fallbackResource;
     }
     
     throw new Error('No recovery method available');
@@ -155,7 +158,7 @@ class MissingResource extends Resource {
    * @returns {boolean}
    */
   isRecovered() {
-    return this._canRecover;
+    return this.#canRecover;
   }
 
   /**
@@ -164,10 +167,10 @@ class MissingResource extends Resource {
    */
   toJSON() {
     const data = super.toJSON();
-    data.originalPath = this._originalPath;
-    data.originalType = this._originalType;
-    data.error = this._error;
-    data.recoveryData = this._recoveryData;
+    data.originalPath = this.#originalPath;
+    data.originalType = this.#originalType;
+    data.error = this.#error;
+    data.recoveryData = this.#recoveryData;
     return data;
   }
 
@@ -178,11 +181,11 @@ class MissingResource extends Resource {
    */
   fromJSON(data) {
     super.fromJSON(data);
-    this._originalPath = data.originalPath || '';
-    this._originalType = data.originalType || '';
-    this._error = data.error || '';
-    this._recoveryData = data.recoveryData || null;
-    this._canRecover = !!this._recoveryData;
+    this.#originalPath = data.originalPath || '';
+    this.#originalType = data.originalType || '';
+    this.#error = data.error || '';
+    this.#recoveryData = data.recoveryData || null;
+    this.#canRecover = !!this.#recoveryData;
     return this;
   }
 }
