@@ -13,16 +13,15 @@ const Logger = require('../utils/Logger.js');
  * @class ResourceImporter
  */
 class ResourceImporter {
-  constructor() {
-    this._importers = {};
-    this._options = {};
-    this._logger = new Logger('ResourceImporter');
-    this._importQueue = [];
-    this._processing = false;
-    this._results = [];
-    this._errorCount = 0;
-    this._successCount = 0;
-  }
+  #importers = {};
+  #options = {};
+  #logger = new Logger('ResourceImporter');
+  #importQueue = [];
+  #processing = false;
+  #results = [];
+  #errorCount = 0;
+  #successCount = 0;
+  static #default = null;
 
   /**
    * Register importer
@@ -31,7 +30,7 @@ class ResourceImporter {
    * @returns {ResourceImporter} This instance
    */
   registerImporter(extension, importer) {
-    this._importers[extension.toLowerCase()] = importer;
+    this.#importers[extension.toLowerCase()] = importer;
     return this;
   }
 
@@ -42,7 +41,7 @@ class ResourceImporter {
    * @returns {ResourceImporter} This instance
    */
   setOption(name, value) {
-    this._options[name] = value;
+    this.#options[name] = value;
     return this;
   }
 
@@ -53,7 +52,7 @@ class ResourceImporter {
    * @returns {*}
    */
   getOption(name, defaultValue = null) {
-    return this._options[name] !== undefined ? this._options[name] : defaultValue;
+    return this.#options[name] !== undefined ? this.#options[name] : defaultValue;
   }
 
   /**
@@ -64,22 +63,22 @@ class ResourceImporter {
    */
   import(path, options = {}) {
     const ext = PATH.extname(path).toLowerCase().substring(1);
-    const importer = this._importers[ext];
+    const importer = this.#importers[ext];
     if (!importer) {
       throw new Error(`No importer registered for: ${ext}`);
     }
     
-    const mergedOptions = { ...this._options, ...options };
-    this._logger.info(`Importing: ${path}`, { extension: ext, options: mergedOptions });
+    const mergedOptions = { ...this.#options, ...options };
+    this.#logger.info(`Importing: ${path}`, { extension: ext, options: mergedOptions });
     
     try {
       const result = importer(path, mergedOptions);
-      this._successCount++;
-      this._logger.info(`Import complete: ${path}`);
+      this.#successCount++;
+      this.#logger.info(`Import complete: ${path}`);
       return result;
     } catch (error) {
-      this._errorCount++;
-      this._logger.error(`Import failed: ${path}`, { error: error.message });
+      this.#errorCount++;
+      this.#logger.error(`Import failed: ${path}`, { error: error.message });
       throw error;
     }
   }
@@ -97,11 +96,10 @@ class ResourceImporter {
     }
     
     const results = [];
-    const entries = FS.readdirSync(dir);
-    this._importQueue = [];
-    this._results = [];
-    this._errorCount = 0;
-    this._successCount = 0;
+    this.#importQueue = [];
+    this.#results = [];
+    this.#errorCount = 0;
+    this.#successCount = 0;
     
     // Collect files
     const collectFiles = (currentDir) => {
@@ -113,8 +111,8 @@ class ResourceImporter {
           collectFiles(fullPath);
         } else {
           const ext = PATH.extname(item).toLowerCase().substring(1);
-          if (this._importers[ext]) {
-            this._importQueue.push(fullPath);
+          if (this.#importers[ext]) {
+            this.#importQueue.push(fullPath);
           }
         }
       }
@@ -122,20 +120,20 @@ class ResourceImporter {
     collectFiles(dir);
     
     // Process queue
-    const mergedOptions = { ...this._options, ...options };
-    const total = this._importQueue.length;
+    const mergedOptions = { ...this.#options, ...options };
+    const total = this.#importQueue.length;
     
     for (let i = 0; i < total; i++) {
-      const filePath = this._importQueue[i];
+      const filePath = this.#importQueue[i];
       try {
         const result = this.import(filePath, mergedOptions);
         results.push({ path: filePath, result, success: true });
-        this._results.push({ path: filePath, result, success: true });
-        this._successCount++;
+        this.#results.push({ path: filePath, result, success: true });
+        this.#successCount++;
       } catch (error) {
         results.push({ path: filePath, error: error.message, success: false });
-        this._results.push({ path: filePath, error: error.message, success: false });
-        this._errorCount++;
+        this.#results.push({ path: filePath, error: error.message, success: false });
+        this.#errorCount++;
       }
       
       if (progress) {
@@ -152,7 +150,7 @@ class ResourceImporter {
    * @returns {boolean}
    */
   isSupported(extension) {
-    return extension.toLowerCase() in this._importers;
+    return extension.toLowerCase() in this.#importers;
   }
 
   /**
@@ -160,7 +158,7 @@ class ResourceImporter {
    * @returns {Array}
    */
   getSupportedExtensions() {
-    return Object.keys(this._importers);
+    return Object.keys(this.#importers);
   }
 
   /**
@@ -168,7 +166,7 @@ class ResourceImporter {
    * @returns {Array}
    */
   getResults() {
-    return this._results;
+    return this.#results;
   }
 
   /**
@@ -177,9 +175,9 @@ class ResourceImporter {
    */
   getStats() {
     return {
-      total: this._importQueue.length,
-      success: this._successCount,
-      error: this._errorCount,
+      total: this.#importQueue.length,
+      success: this.#successCount,
+      error: this.#errorCount,
     };
   }
 
@@ -188,7 +186,7 @@ class ResourceImporter {
    * @returns {Logger}
    */
   get logger() {
-    return this._logger;
+    return this.#logger;
   }
 
   /**
@@ -196,38 +194,38 @@ class ResourceImporter {
    * @returns {ResourceImporter}
    */
   static getDefault() {
-    if (!ResourceImporter._default) {
-      ResourceImporter._default = new ResourceImporter();
-      ResourceImporter._default.registerImporter('png', (path) => {
+    if (!ResourceImporter.#default) {
+      ResourceImporter.#default = new ResourceImporter();
+      ResourceImporter.#default.registerImporter('png', (path) => {
         const Image = require('../graphics/Image.js');
         return Image.load(path);
       });
-      ResourceImporter._default.registerImporter('jpg', (path) => {
+      ResourceImporter.#default.registerImporter('jpg', (path) => {
         const Image = require('../graphics/Image.js');
         return Image.load(path);
       });
-      ResourceImporter._default.registerImporter('jpeg', (path) => {
+      ResourceImporter.#default.registerImporter('jpeg', (path) => {
         const Image = require('../graphics/Image.js');
         return Image.load(path);
       });
-      ResourceImporter._default.registerImporter('json', (path) => {
+      ResourceImporter.#default.registerImporter('json', (path) => {
         const JSONParser = require('../utils/JSONParser.js');
         return JSONParser.parseFile(path);
       });
-      ResourceImporter._default.registerImporter('xml', (path) => {
+      ResourceImporter.#default.registerImporter('xml', (path) => {
         const XMLParser = require('../utils/XMLParser.js');
         return XMLParser.parseFile(path);
       });
-      ResourceImporter._default.registerImporter('plist', (path) => {
+      ResourceImporter.#default.registerImporter('plist', (path) => {
         const PlistParser = require('../utils/PlistParser.js');
         return PlistParser.parseFile(path);
       });
-      ResourceImporter._default.registerImporter('po', (path) => {
+      ResourceImporter.#default.registerImporter('po', (path) => {
         const TranslationLoaderPO = require('../i18n/TranslationLoaderPO.js');
         return TranslationLoaderPO.load(path);
       });
     }
-    return ResourceImporter._default;
+    return ResourceImporter.#default;
   }
 }
 
