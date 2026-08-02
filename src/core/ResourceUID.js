@@ -11,9 +11,9 @@ const FS = require('fs');
  * @class ResourceUID
  */
 class ResourceUID {
-  static _cache = {};
-  static _counter = 0;
-  static _maxCacheSize = 1000;
+  static #cache = {};
+  static #counter = 0;
+  static #maxCacheSize = 1000;
 
   /**
    * Generate UID
@@ -21,7 +21,7 @@ class ResourceUID {
    */
   static generate() {
     const timestamp = Date.now().toString(36);
-    const counter = (ResourceUID._counter++).toString(36);
+    const counter = (ResourceUID.#counter++).toString(36);
     const random = Math.random().toString(36).substring(2, 8);
     return `uid_${timestamp}_${counter}_${random}`;
   }
@@ -42,7 +42,7 @@ class ResourceUID {
    * @param {string} path - Resource path
    */
   static register(uid, path) {
-    ResourceUID._cache[uid] = path;
+    ResourceUID.#cache[uid] = path;
     ResourceUID.__trimCache();
   }
 
@@ -52,7 +52,7 @@ class ResourceUID {
    * @returns {boolean}
    */
   static unregister(uid) {
-    return delete ResourceUID._cache[uid];
+    return delete ResourceUID.#cache[uid];
   }
 
   /**
@@ -61,7 +61,7 @@ class ResourceUID {
    * @returns {string|null}
    */
   static getPath(uid) {
-    return ResourceUID._cache[uid] || null;
+    return ResourceUID.#cache[uid] || null;
   }
 
   /**
@@ -70,8 +70,8 @@ class ResourceUID {
    * @returns {string|null}
    */
   static getUID(path) {
-    for (const uid in ResourceUID._cache) {
-      if (ResourceUID._cache[uid] === path) {
+    for (const uid in ResourceUID.#cache) {
+      if (ResourceUID.#cache[uid] === path) {
         return uid;
       }
     }
@@ -91,7 +91,7 @@ class ResourceUID {
    * Clear cache
    */
   static clear() {
-    ResourceUID._cache = {};
+    ResourceUID.#cache = {};
   }
 
   /**
@@ -99,11 +99,11 @@ class ResourceUID {
    * @private
    */
   static __trimCache() {
-    const keys = Object.keys(ResourceUID._cache);
-    if (keys.length > ResourceUID._maxCacheSize) {
+    const keys = Object.keys(ResourceUID.#cache);
+    if (keys.length > ResourceUID.#maxCacheSize) {
       const toRemove = keys.slice(0, Math.floor(keys.length / 2));
       for (const key of toRemove) {
-        delete ResourceUID._cache[key];
+        delete ResourceUID.#cache[key];
       }
     }
   }
@@ -113,7 +113,7 @@ class ResourceUID {
    * @param {string} filepath - File path
    */
   static saveCache(filepath) {
-    const data = JSON.stringify(ResourceUID._cache);
+    const data = JSON.stringify(ResourceUID.#cache);
     FS.writeFileSync(filepath, data, 'utf-8');
   }
 
@@ -124,7 +124,7 @@ class ResourceUID {
   static loadCache(filepath) {
     if (!FS.existsSync(filepath)) return;
     const data = FS.readFileSync(filepath, 'utf-8');
-    ResourceUID._cache = JSON.parse(data);
+    ResourceUID.#cache = JSON.parse(data);
   }
 
   /**
@@ -132,7 +132,7 @@ class ResourceUID {
    * @param {number} size - Max cache size
    */
   static setMaxCacheSize(size) {
-    ResourceUID._maxCacheSize = Math.max(1, size);
+    ResourceUID.#maxCacheSize = Math.max(1, size);
     ResourceUID.__trimCache();
   }
 
@@ -141,7 +141,7 @@ class ResourceUID {
    * @returns {number}
    */
   static getCacheSize() {
-    return Object.keys(ResourceUID._cache).length;
+    return Object.keys(ResourceUID.#cache).length;
   }
 }
 
