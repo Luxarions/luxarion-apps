@@ -14,58 +14,56 @@ const EventEmitter = require('events');
 class MultiplayerPeer extends EventEmitter {
   /**
    * Transfer modes
+   * @static
    */
   static TRANSFER_MODE_RELIABLE = 0;
   static TRANSFER_MODE_UNRELIABLE = 1;
   static TRANSFER_MODE_UNRELIABLE_ORDERED = 2;
 
-  constructor() {
-    super();
-    this._multiplayer = null;
-    this._transferMode = MultiplayerPeer.TRANSFER_MODE_RELIABLE;
-    this._targetPeer = 0;
-    this._connected = false;
-    this._incomingPackets = [];
-    this._outgoingPackets = [];
-    this._packetHandlers = [];
-    this._peerId = -1;
-    this._peerIds = new Set();
-    this._callbacks = {};
-    this._socket = null;
-    this._maxPacketSize = 65535;
-    this._compressPackets = false;
-    this._encryptPackets = false;
-    this._encryptionKey = null;
-    this._packetQueue = [];
-    this._queueLimit = 1000;
-    this._sendRate = 0;
-    this._lastSendTime = 0;
-    this._sendInterval = 0;
-    this._bytesSent = 0;
-    this._bytesReceived = 0;
-    this._packetsSent = 0;
-    this._packetsReceived = 0;
-    this._packetsDropped = 0;
-    this._latency = 0;
-    this._jitter = 0;
-    this._connectionTime = 0;
-    this._reconnectAttempts = 0;
-    this._maxReconnectAttempts = 5;
-    this._reconnectDelay = 1000;
-    this._reconnecting = false;
-    this._pingInterval = null;
-    this._pingTimeout = 30000;
-    this._lastPing = 0;
-    this._lastPong = 0;
-    this._roundTripTime = 0;
-  }
+  #multiplayer = null;
+  #transferMode = MultiplayerPeer.TRANSFER_MODE_RELIABLE;
+  #targetPeer = 0;
+  #connected = false;
+  #incomingPackets = [];
+  #outgoingPackets = [];
+  #packetHandlers = [];
+  #peerId = -1;
+  #peerIds = new Set();
+  #callbacks = {};
+  #socket = null;
+  #maxPacketSize = 65535;
+  #compressPackets = false;
+  #encryptPackets = false;
+  #encryptionKey = null;
+  #packetQueue = [];
+  #queueLimit = 1000;
+  #sendRate = 0;
+  #lastSendTime = 0;
+  #sendInterval = 0;
+  #bytesSent = 0;
+  #bytesReceived = 0;
+  #packetsSent = 0;
+  #packetsReceived = 0;
+  #packetsDropped = 0;
+  #latency = 0;
+  #jitter = 0;
+  #connectionTime = 0;
+  #reconnectAttempts = 0;
+  #maxReconnectAttempts = 5;
+  #reconnectDelay = 1000;
+  #reconnecting = false;
+  #pingInterval = null;
+  #pingTimeout = 30000;
+  #lastPing = 0;
+  #lastPong = 0;
+  #roundTripTime = 0;
 
   /**
    * Get multiplayer
    * @returns {Object|null}
    */
   get multiplayer() {
-    return this._multiplayer;
+    return this.#multiplayer;
   }
 
   /**
@@ -73,7 +71,7 @@ class MultiplayerPeer extends EventEmitter {
    * @param {Object} value - Multiplayer
    */
   set multiplayer(value) {
-    this._multiplayer = value;
+    this.#multiplayer = value;
   }
 
   /**
@@ -81,7 +79,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {number}
    */
   get transferMode() {
-    return this._transferMode;
+    return this.#transferMode;
   }
 
   /**
@@ -89,7 +87,7 @@ class MultiplayerPeer extends EventEmitter {
    * @param {number} value - Transfer mode
    */
   set transferMode(value) {
-    this._transferMode = value;
+    this.#transferMode = value;
   }
 
   /**
@@ -97,7 +95,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {number}
    */
   get targetPeer() {
-    return this._targetPeer;
+    return this.#targetPeer;
   }
 
   /**
@@ -105,7 +103,7 @@ class MultiplayerPeer extends EventEmitter {
    * @param {number} value - Target peer
    */
   set targetPeer(value) {
-    this._targetPeer = value;
+    this.#targetPeer = value;
   }
 
   /**
@@ -113,7 +111,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {boolean}
    */
   isConnected() {
-    return this._connected;
+    return this.#connected;
   }
 
   /**
@@ -121,7 +119,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {number}
    */
   get peerId() {
-    return this._peerId;
+    return this.#peerId;
   }
 
   /**
@@ -129,7 +127,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {Array}
    */
   getConnectedPeers() {
-    return Array.from(this._peerIds);
+    return Array.from(this.#peerIds);
   }
 
   /**
@@ -138,7 +136,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   setTransferMode(mode) {
-    this._transferMode = mode;
+    this.#transferMode = mode;
     return this;
   }
 
@@ -148,7 +146,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   setTargetPeer(id) {
-    this._targetPeer = id;
+    this.#targetPeer = id;
     return this;
   }
 
@@ -167,21 +165,21 @@ class MultiplayerPeer extends EventEmitter {
     }
     
     // Check size
-    if (packet.length > this._maxPacketSize) {
+    if (packet.length > this.#maxPacketSize) {
       // Split packet
       const chunks = this.__splitPacket(packet);
       for (const chunk of chunks) {
-        this._outgoingPackets.push({
+        this.#outgoingPackets.push({
           data: chunk,
-          mode: this._transferMode,
-          target: this._targetPeer,
+          mode: this.#transferMode,
+          target: this.#targetPeer,
         });
       }
     } else {
-      this._outgoingPackets.push({
+      this.#outgoingPackets.push({
         data: packet,
-        mode: this._transferMode,
-        target: this._targetPeer,
+        mode: this.#transferMode,
+        target: this.#targetPeer,
       });
     }
     
@@ -197,8 +195,8 @@ class MultiplayerPeer extends EventEmitter {
    */
   __splitPacket(data) {
     const chunks = [];
-    for (let i = 0; i < data.length; i += this._maxPacketSize) {
-      chunks.push(data.slice(i, i + this._maxPacketSize));
+    for (let i = 0; i < data.length; i += this.#maxPacketSize) {
+      chunks.push(data.slice(i, i + this.#maxPacketSize));
     }
     return chunks;
   }
@@ -208,13 +206,13 @@ class MultiplayerPeer extends EventEmitter {
    * @private
    */
   __processOutgoing() {
-    while (this._outgoingPackets.length > 0) {
-      const packet = this._outgoingPackets.shift();
-      this._packetsSent++;
-      this._bytesSent += packet.data.length;
+    while (this.#outgoingPackets.length > 0) {
+      const packet = this.#outgoingPackets.shift();
+      this.#packetsSent++;
+      this.#bytesSent += packet.data.length;
       
       // Call handlers
-      for (const handler of this._packetHandlers) {
+      for (const handler of this.#packetHandlers) {
         try {
           handler(packet.data, packet.target);
         } catch (error) {
@@ -231,10 +229,10 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {Buffer|null}
    */
   receive() {
-    if (this._incomingPackets.length > 0) {
-      const packet = this._incomingPackets.shift();
-      this._packetsReceived++;
-      this._bytesReceived += packet.length;
+    if (this.#incomingPackets.length > 0) {
+      const packet = this.#incomingPackets.shift();
+      this.#packetsReceived++;
+      this.#bytesReceived += packet.length;
       return packet;
     }
     return null;
@@ -245,7 +243,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {number}
    */
   getAvailablePacketCount() {
-    return this._incomingPackets.length;
+    return this.#incomingPackets.length;
   }
 
   /**
@@ -254,7 +252,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   addPacketHandler(handler) {
-    this._packetHandlers.push(handler);
+    this.#packetHandlers.push(handler);
     return this;
   }
 
@@ -264,9 +262,9 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {boolean}
    */
   removePacketHandler(handler) {
-    const idx = this._packetHandlers.indexOf(handler);
+    const idx = this.#packetHandlers.indexOf(handler);
     if (idx !== -1) {
-      this._packetHandlers.splice(idx, 1);
+      this.#packetHandlers.splice(idx, 1);
       return true;
     }
     return false;
@@ -276,15 +274,16 @@ class MultiplayerPeer extends EventEmitter {
    * Connect to peer
    * @param {string} host - Host to connect to
    * @param {number} port - Port to connect to
+   * @param {Object} options - Connection options
    * @returns {Promise<MultiplayerPeer>}
    */
-  connect(host, port) {
+  connect(host, port, options = {}) {
     return new Promise((resolve, reject) => {
       try {
         // Simulate connection
-        this._connected = true;
-        this._peerId = Math.floor(Math.random() * 1000000) + 1;
-        this._connectionTime = Date.now();
+        this.#connected = true;
+        this.#peerId = Math.floor(Math.random() * 1000000) + 1;
+        this.#connectionTime = Date.now();
         this.emit('connected');
         resolve(this);
       } catch (error) {
@@ -298,7 +297,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   disconnect() {
-    this._connected = false;
+    this.#connected = false;
     this.__stopPing();
     this.emit('disconnected');
     return this;
@@ -310,21 +309,21 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   setSocket(socket) {
-    this._socket = socket;
+    this.#socket = socket;
     if (socket) {
       socket.on('data', (data) => {
-        this._incomingPackets.push(data);
-        this._packetsReceived++;
-        this._bytesReceived += data.length;
+        this.#incomingPackets.push(data);
+        this.#packetsReceived++;
+        this.#bytesReceived += data.length;
         this.emit('packetReceived', data);
       });
       socket.on('connect', () => {
-        this._connected = true;
+        this.#connected = true;
         this.emit('connected');
         this.__startPing();
       });
       socket.on('close', () => {
-        this._connected = false;
+        this.#connected = false;
         this.__stopPing();
         this.emit('disconnected');
       });
@@ -340,7 +339,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {Object|null}
    */
   getSocket() {
-    return this._socket;
+    return this.#socket;
   }
 
   /**
@@ -349,9 +348,9 @@ class MultiplayerPeer extends EventEmitter {
    */
   __startPing() {
     this.__stopPing();
-    this._pingInterval = setInterval(() => {
-      if (this._connected) {
-        this._lastPing = Date.now();
+    this.#pingInterval = setInterval(() => {
+      if (this.#connected) {
+        this.#lastPing = Date.now();
         this.send('__ping__');
       }
     }, 5000);
@@ -362,9 +361,9 @@ class MultiplayerPeer extends EventEmitter {
    * @private
    */
   __stopPing() {
-    if (this._pingInterval) {
-      clearInterval(this._pingInterval);
-      this._pingInterval = null;
+    if (this.#pingInterval) {
+      clearInterval(this.#pingInterval);
+      this.#pingInterval = null;
     }
   }
 
@@ -374,7 +373,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   setMaxPacketSize(size) {
-    this._maxPacketSize = size;
+    this.#maxPacketSize = size;
     return this;
   }
 
@@ -384,7 +383,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   setCompression(enable) {
-    this._compressPackets = enable;
+    this.#compressPackets = enable;
     return this;
   }
 
@@ -395,8 +394,8 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   setEncryption(enable, key = null) {
-    this._encryptPackets = enable;
-    this._encryptionKey = key;
+    this.#encryptPackets = enable;
+    this.#encryptionKey = key;
     return this;
   }
 
@@ -406,7 +405,7 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   setQueueLimit(limit) {
-    this._queueLimit = limit;
+    this.#queueLimit = limit;
     return this;
   }
 
@@ -416,18 +415,18 @@ class MultiplayerPeer extends EventEmitter {
    */
   getStats() {
     return {
-      connected: this._connected,
-      peerId: this._peerId,
-      bytesSent: this._bytesSent,
-      bytesReceived: this._bytesReceived,
-      packetsSent: this._packetsSent,
-      packetsReceived: this._packetsReceived,
-      packetsDropped: this._packetsDropped,
-      latency: this._latency,
-      jitter: this._jitter,
-      rtt: this._roundTripTime,
-      connectionTime: this._connectionTime,
-      uptime: Date.now() - this._connectionTime,
+      connected: this.#connected,
+      peerId: this.#peerId,
+      bytesSent: this.#bytesSent,
+      bytesReceived: this.#bytesReceived,
+      packetsSent: this.#packetsSent,
+      packetsReceived: this.#packetsReceived,
+      packetsDropped: this.#packetsDropped,
+      latency: this.#latency,
+      jitter: this.#jitter,
+      rtt: this.#roundTripTime,
+      connectionTime: this.#connectionTime,
+      uptime: Date.now() - this.#connectionTime,
     };
   }
 
@@ -437,10 +436,10 @@ class MultiplayerPeer extends EventEmitter {
    */
   toJSON() {
     return {
-      peerId: this._peerId,
-      connected: this._connected,
-      transferMode: this._transferMode,
-      targetPeer: this._targetPeer,
+      peerId: this.#peerId,
+      connected: this.#connected,
+      transferMode: this.#transferMode,
+      targetPeer: this.#targetPeer,
     };
   }
 
@@ -450,10 +449,10 @@ class MultiplayerPeer extends EventEmitter {
    * @returns {MultiplayerPeer} This instance
    */
   fromJSON(data) {
-    this._peerId = data.peerId || -1;
-    this._connected = data.connected || false;
-    this._transferMode = data.transferMode || MultiplayerPeer.TRANSFER_MODE_RELIABLE;
-    this._targetPeer = data.targetPeer || 0;
+    this.#peerId = data.peerId || -1;
+    this.#connected = data.connected || false;
+    this.#transferMode = data.transferMode || MultiplayerPeer.TRANSFER_MODE_RELIABLE;
+    this.#targetPeer = data.targetPeer || 0;
     return this;
   }
 }
