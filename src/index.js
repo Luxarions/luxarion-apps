@@ -9,9 +9,7 @@
 const FS = require('fs');
 const PATH = require('path');
 
-// ============================================================================
 // Core Module
-// ============================================================================
 const LXRN = {
   VERSION: '1.0.0',
   NAME: 'LXRN Game Engine',
@@ -36,6 +34,10 @@ const LXRN = {
   PACKET_PEER_DTLS: require('./src/core/PacketPeerDTLS.js'),
   DTLS_SERVER: require('./src/core/DTLSServer.js'),
   SOCKET_SERVER: require('./src/core/SocketServer.js'),
+  MISSING_RESOURCE: require('./src/core/MissingResource.js'),
+  ZIP_IO: require('./src/core/ZipIO.js'),
+  RESOURCE_UID: require('./src/core/ResourceUID.js'),
+  RESOURCE_IMPORTER: require('./src/core/ResourceImporter.js'),
   
   // Network
   HTTP_CLIENT: require('./src/network/HTTPClient.js'),
@@ -43,10 +45,12 @@ const LXRN = {
   WEB_SOCKET_CLIENT: require('./src/network/WebSocketClient.js'),
   WEB_SOCKET_SERVER: require('./src/network/WebSocketServer.js'),
   MULTIPLAYER_API: require('./src/network/MultiplayerAPI.js'),
+  REMOTE_FILESYSTEM_CLIENT: require('./src/network/RemoteFilesystemClient.js'),
   
   // Resource
   RESOURCE: require('./src/resource/Resource.js'),
   RESOURCE_LOADER: require('./src/resource/ResourceLoader.js'),
+  RESOURCE_LOADER_CONSTANTS: require('./src/resource/ResourceLoaderConstants.js'),
   RESOURCE_SAVER: require('./src/resource/ResourceSaver.js'),
   RESOURCE_FORMAT_BINARY: require('./src/resource/ResourceFormatBinary.js'),
   RESOURCE_FORMAT_JSON: require('./src/resource/ResourceFormatJSON.js'),
@@ -64,6 +68,8 @@ const LXRN = {
   // Scene
   NODE: require('./src/scene/Node.js'),
   SCENE_TREE: require('./src/scene/SceneTree.js'),
+  SCENE_TREE_FTI: require('./src/scene/SceneTreeFTI.js'),
+  SCENE_TREE_FTI_TESTS: require('./src/scene/SceneTreeFTITests.js'),
   TIMER: require('./src/scene/Timer.js'),
   CANVAS_ITEM: require('./src/scene/CanvasItem.js'),
   CANVAS_LAYER: require('./src/scene/CanvasLayer.js'),
@@ -74,6 +80,7 @@ const LXRN = {
   MISSING_NODE: require('./src/scene/MissingNode.js'),
   STATUS_INDICATOR: require('./src/scene/StatusIndicator.js'),
   SHADER_GLOBALS_OVERRIDE: require('./src/scene/ShaderGlobalsOverride.js'),
+  MULTIPLAYER_PEER: require('./src/scene/MultiplayerPeer.js'),
   
   // Crypto
   HASHING_CONTEXT: require('./src/crypto/HashingContext.js'),
@@ -108,6 +115,8 @@ const LXRN = {
   PLIST_PARSER: require('./src/utils/PlistParser.js'),
   MARSHALLS: require('./src/utils/Marshalls.js'),
   TIME: require('./src/utils/Time.js'),
+  TIME_ENUMS: require('./src/utils/TimeEnums.js'),
+  PROCESS_ID: require('./src/utils/ProcessID.js'),
   OS: require('./src/utils/OS.js'),
   MEMORY: require('./src/utils/Memory.js'),
   KEYBOARD: require('./src/utils/Keyboard.js'),
@@ -126,7 +135,7 @@ const LXRN = {
   APPLICATION: class Application {
     constructor() {
       this._logger = new LXRN.LOGGER('Application');
-      this._sceneTree = new LXRN.SCENE_TREE();
+      this._sceneTree = new LXRN.SCENE_TREE_FTI();
       this._window = new LXRN.WINDOW('LXRN Application');
       this._preloader = new LXRN.RESOURCE_PRELOADER();
       this._multiplayer = new LXRN.MULTIPLAYER_API();
@@ -204,14 +213,10 @@ const LXRN = {
   }
 };
 
-// ============================================================================
 // Export all modules
-// ============================================================================
 module.exports = LXRN;
 
-// ============================================================================
 // Auto-initialize if run directly
-// ============================================================================
 if (require.main === module) {
   console.log(`
 ╔══════════════════════════════════════════════════════════════════╗
