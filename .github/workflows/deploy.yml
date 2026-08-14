@@ -1,0 +1,24 @@
+name: Deploy Luxarion
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Authenticate with GitHub API
+        env:
+          TOKEN: ${{ secrets.TOKEN_LUXARION }}
+        run: |
+          echo "🔐 Authenticating..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $TOKEN" https://api.github.com/user)
+          if [ "$RESPONSE" -eq 200 ]; then
+            echo "✅ Authentication successful!"
+          else
+            echo "❌ Authentication failed (HTTP $RESPONSE)"
+            exit 1
+          fi
