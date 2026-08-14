@@ -1,9 +1,8 @@
-// src/core/EventDispatcher.js
 export class EventDispatcher {
     constructor() {
         this._listeners = {};
     }
-    
+
     addEventListener(type, listener) {
         if (!this._listeners[type]) this._listeners[type] = [];
         if (!this._listeners[type].includes(listener)) {
@@ -11,7 +10,7 @@ export class EventDispatcher {
         }
         return this;
     }
-    
+
     removeEventListener(type, listener) {
         const list = this._listeners[type];
         if (list) {
@@ -20,7 +19,7 @@ export class EventDispatcher {
         }
         return this;
     }
-    
+
     dispatchEvent(event) {
         const list = this._listeners[event.type];
         if (list) {
@@ -33,16 +32,16 @@ export class EventDispatcher {
         }
         return this;
     }
-    
+
     hasEventListener(type, listener) {
         const list = this._listeners[type];
         return list ? list.includes(listener) : false;
     }
-    
+
     on(type, listener) {
         return this.addEventListener(type, listener);
     }
-    
+
     off(type, listener) {
         return this.removeEventListener(type, listener);
     }
