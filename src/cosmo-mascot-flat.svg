@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" width="500" height="600">
+  <!-- Background -->
+  <rect width="500" height="600" fill="#f0f0f0" rx="20"/>
+  
+  <!-- Shadow -->
+  <ellipse cx="250" cy="540" rx="100" ry="15" fill="rgba(0,0,0,0.15)"/>
+  
+  <!-- Kaki Kanan (sepatu merah sol putih) -->
+  <rect x="270" y="470" width="55" height="30" rx="8" fill="#E53935"/>
+  <rect x="270" y="495" width="55" height="15" rx="5" fill="white"/>
+  <rect x="265" y="500" width="60" height="10" rx="4" fill="#B71C1C"/>
+  
+  <!-- Kaki Kiri (sepatu merah sol putih) -->
+  <rect x="175" y="470" width="55" height="30" rx="8" fill="#E53935"/>
+  <rect x="175" y="495" width="55" height="15" rx="5" fill="white"/>
+  <rect x="170" y="500" width="60" height="10" rx="4" fill="#B71C1C"/>
+  
+  <!-- Badan -->
+  <ellipse cx="250" cy="380" rx="85" ry="100" fill="#43A047"/>
+  
+  <!-- Ikat pinggang (abu-abu) -->
+  <rect x="170" y="430" width="160" height="18" rx="5" fill="#757575"/>
+  <rect x="230" y="425" width="40" height="28" rx="5" fill="#616161"/>
+  
+  <!-- Tangan Kiri (lengan hijau + sarung tangan putih) -->
+  <rect x="130" y="320" width="28" height="70" rx="12" fill="#43A047"/>
+  <circle cx="144" cy="410" r="28" fill="white"/>
+  <circle cx="132" cy="400" r="6" fill="#e0e0e0"/>
+  <circle cx="156" cy="400" r="6" fill="#e0e0e0"/>
+  
+  <!-- Tangan Kanan (lengan hijau + sarung tangan putih) -->
+  <rect x="342" y="320" width="28" height="70" rx="12" fill="#43A047"/>
+  <circle cx="356" cy="410" r="28" fill="white"/>
+  <circle cx="344" cy="400" r="6" fill="#e0e0e0"/>
+  <circle cx="368" cy="400" r="6" fill="#e0e0e0"/>
+  
+  <!-- Kepala -->
+  <circle cx="250" cy="190" r="130" fill="#43A047"/>
+  
+  <!-- Pipi merah -->
+  <ellipse cx="160" cy="210" rx="30" ry="18" fill="rgba(229,57,53,0.3)"/>
+  <ellipse cx="340" cy="210" rx="30" ry="18" fill="rgba(229,57,53,0.3)"/>
+  
+  <!-- Mata Kiri -->
+  <ellipse cx="200" cy="180" rx="38" ry="42" fill="white"/>
+  <circle cx="210" cy="178" r="22" fill="#1a1a2e"/>
+  <circle cx="218" cy="170" r="7" fill="white"/>
+  
+  <!-- Mata Kanan -->
+  <ellipse cx="300" cy="180" rx="38" ry="42" fill="white"/>
+  <circle cx="310" cy="178" r="22" fill="#1a1a2e"/>
+  <circle cx="318" cy="170" r="7" fill="white"/>
+  
+  <!-- Mulut (senyum lebar bentuk U terbalik) -->
+  <path d="M 175 230 Q 250 290 325 230" stroke="#1a1a2e" stroke-width="6" fill="none" stroke-linecap="round"/>
+  
+  <!-- Lidah menjorok keluar -->
+  <ellipse cx="250" cy="260" rx="35" ry="22" fill="#E53935"/>
+  <ellipse cx="250" cy="262" rx="30" ry="16" fill="#EF5350"/>
+  <!-- garis tengah lidah -->
+  <path d="M 230 258 Q 250 252 270 258" stroke="#C62828" stroke-width="2" fill="none"/>
+  
+  <!-- Antenna -->
+  <line x1="250" y1="60" x2="250" y2="20" stroke="#43A047" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Bola antena -->
+  <circle cx="250" cy="18" r="16" fill="#FFC107"/>
+  <circle cx="245" cy="13" r="5" fill="rgba(255,255,255,0.4)"/>
+  
+  <!-- Nama COSMO (sesuai gambar) -->
+  <text x="250" y="580" font-family="'Arial Black', Impact, sans-serif" font-size="36" font-weight="900" fill="#1a1a2e" text-anchor="middle" letter-spacing="6">COSMO</text>
+</svg>
